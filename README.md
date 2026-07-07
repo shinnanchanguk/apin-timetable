@@ -12,6 +12,14 @@ This package is independent from Jjongal. It is a small library and CLI that oth
 
 ## Install
 
+Current GitHub install:
+
+```bash
+npm install github:shinnanchanguk/apin-timetable
+```
+
+After npm publication:
+
 ```bash
 npm install apin-timetable
 ```
