@@ -1,0 +1,41 @@
+{
+  "name": "apin-timetable",
+  "version": "0.1.0",
+  "description": "Unofficial client for the Apin timetable mobile server used by Korean schools.",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "apin-timetable": "dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "live": "npm run build && node scripts/live-check.mjs",
+    "prepublishOnly": "npm test"
+  },
+  "keywords": [
+    "apin",
+    "timetable",
+    "school",
+    "korea",
+    "korean-school"
+  ],
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "typescript": "^5.8.3"
+  }
+}
