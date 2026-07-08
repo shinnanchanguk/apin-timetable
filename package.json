@@ -1,9 +1,18 @@
 {
   "name": "apin-timetable",
-  "version": "0.1.0",
-  "description": "Unofficial client for the Apin timetable mobile server used by Korean schools.",
+  "version": "0.2.0",
+  "description": "Unofficial client for the Apin (YWTek) school timetable server: dynamic app API + static file parser + cross-verification.",
   "type": "module",
   "license": "MIT",
+  "author": "Shinchang Shin",
+  "contributors": [
+    "Shinchang Shin (shinnanchanguk)",
+    "박준일 (pblsketch) — static file parser"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shinnanchanguk/apin-timetable.git"
+  },
   "bin": {
     "apin-timetable": "dist/cli.js"
   },
@@ -16,6 +25,7 @@
   "files": [
     "dist",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "engines": {
@@ -30,10 +40,15 @@
   },
   "keywords": [
     "apin",
+    "압핀",
     "timetable",
+    "시간표",
+    "ywtek",
+    "sgpap",
     "school",
     "korea",
-    "korean-school"
+    "korean-school",
+    "parser"
   ],
   "devDependencies": {
     "@types/node": "^26.1.0",

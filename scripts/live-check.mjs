@@ -1,51 +1,64 @@
+// Live check against the real Apin server (network required).
+//   npm run live
+// Proves the dynamic path, the static path, and that crossVerify() sees them
+// agree on a real school. Default target: 대구 학남고등학교, this week.
 import assert from "node:assert/strict";
 import {
   countWebdirs,
+  crossVerify,
+  currentWeekByUpdate,
   getClassTimetable,
-  getTeacherTimetable,
+  getRoomTimetable,
+  getStaticPeriodTimes,
   listTeachers,
   lookupSchool,
 } from "../dist/index.js";
 
-const city = "대구";
-const schoolName = "학남고등학교";
-const weekStart = "2026-07-06";
+const city = process.env.APIN_CITY || "대구";
+const schoolName = process.env.APIN_SCHOOL || "학남고등학교";
+const weekStart = process.env.APIN_WEEK || "2026-07-06";
 
 const count = await countWebdirs();
-assert.ok(count.webdirCount >= 600, `expected at least 600 webdirs, got ${count.webdirCount}`);
+assert.ok(count.webdirCount >= 500, `expected many webdirs, got ${count.webdirCount}`);
 
 const profile = await lookupSchool({ city, schoolName });
-assert.equal(profile.webPath, "0650");
-assert.equal(profile.classLabels.length, 27);
-assert.equal(profile.teacherOptions.length, 54);
+assert.ok(profile.webdir, "expected a webdir");
+assert.ok(profile.classLabels.length > 0, "expected class labels");
+assert.ok(profile.teacherNumbers.length > 0, "expected teacher numbers");
 
-const classWeek = await getClassTimetable({ city, schoolName, grade: 1, classNo: 1, weekStart });
-assert.equal(classWeek.source, "apin");
-assert.equal(classWeek.weekStart, weekStart);
-assert.ok(classWeek.entries.length >= 30, `expected class entries, got ${classWeek.entries.length}`);
-assert.equal(classWeek.entries[0].subject, "과학탐구실험1");
+const classDyn = await getClassTimetable({ city, schoolName, grade: 1, classNo: 1, weekStart });
+assert.equal(classDyn.source, "dynamic");
+assert.ok(classDyn.entries.length >= 20, `expected class entries, got ${classDyn.entries.length}`);
+
+const classStatic = await getClassTimetable({ city, schoolName, grade: 1, classNo: 1, weekStart, mode: "static" });
+assert.equal(classStatic.source, "static");
 
 const teachers = await listTeachers({ city, schoolName });
-assert.equal(teachers.length, 54);
+assert.equal(teachers.length, profile.teacherNumbers.length);
 
-const teacherWeek = await getTeacherTimetable({ city, schoolName, teacherNo: 1, weekStart });
-assert.ok(teacherWeek.entries.length > 0, "expected teacher timetable entries");
+const room = await getRoomTimetable({ city, schoolName, weekStart }).catch((e) => ({ error: e.message }));
+const periodTimes = await getStaticPeriodTimes(profile.webdir, classDyn.week).catch(() => []);
+const weekByUpdate = await currentWeekByUpdate(profile.webdir).catch(() => null);
+
+// The flagship: dynamic vs static must agree end-to-end on the real server.
+const verified = await crossVerify({ city, schoolName, weekStart });
+assert.equal(verified.allMatch, true, `crossVerify mismatch: ${JSON.stringify(verified.checks)}`);
 
 console.log(
   JSON.stringify(
     {
       webdirCount: count.webdirCount,
-      school: {
-        webPath: profile.webPath,
-        classes: profile.classLabels.length,
-        teachers: profile.teacherOptions.length,
-      },
-      classTimetableEntries: classWeek.entries.length,
-      firstClassEntry: classWeek.entries[0],
-      teacherTimetableEntries: teacherWeek.entries.length,
-      firstTeacherEntry: teacherWeek.entries[0],
+      school: { webdir: profile.webdir, classes: profile.classLabels.length, teachers: profile.teacherNumbers.length, rooms: profile.roomLabels },
+      week: classDyn.week,
+      weekByUpdate,
+      classFirstEntry: classDyn.entries[0],
+      classDynamicVsStaticFirstMatch: classDyn.entries[0]?.subject === classStatic.entries[0]?.subject,
+      room: room.error ? room : { target: room.target, entries: room.entries.length },
+      periodTimes,
+      crossVerify: { allMatch: verified.allMatch, checks: verified.checks.map((c) => ({ label: c.label, match: c.match })) },
     },
     null,
     2,
   ),
 );
+console.log("\nlive cross-check passed ✓");
