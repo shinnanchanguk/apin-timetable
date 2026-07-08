@@ -19,10 +19,23 @@ jobs:
           node-version: 20
       - run: npm ci
       - run: npm test
-      - name: Configure npm auth (strip stray whitespace from the token)
+      - name: Configure npm auth (strip stray whitespace + diagnose token shape)
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          TOKEN="$(printf '%s' "$NPM_TOKEN" | tr -d '[:space:]')"
+          RAW="$NPM_TOKEN"
+          TOKEN="$(printf '%s' "$RAW" | tr -d '[:space:]')"
+          echo "raw byte length : $(printf '%s' "$RAW" | wc -c | tr -d ' ')"
+          echo "trimmed length  : ${#TOKEN}"
+          if printf '%s' "$TOKEN" | LC_ALL=C grep -qE '^[A-Za-z0-9_.~-]+$'; then
+            echo "charset         : OK (token-safe chars only)"
+          else
+            echo "charset         : BAD (has chars outside A-Za-z0-9_.~-)"
+          fi
+          case "$TOKEN" in
+            npm_*)   echo "prefix          : npm_ (classic/automation)";;
+            npmjs_*) echo "prefix          : npmjs_ (granular)";;
+            *)       echo "prefix          : OTHER (may not be an npm token)";;
+          esac
           printf '//registry.npmjs.org/:_authToken=%s\n' "$TOKEN" > "$HOME/.npmrc"
       - run: npm publish --access public
