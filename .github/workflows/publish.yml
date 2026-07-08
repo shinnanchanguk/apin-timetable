@@ -17,9 +17,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          registry-url: "https://registry.npmjs.org"
       - run: npm ci
       - run: npm test
-      - run: npm publish --access public
+      - name: Configure npm auth (strip stray whitespace from the token)
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          TOKEN="$(printf '%s' "$NPM_TOKEN" | tr -d '[:space:]')"
+          printf '//registry.npmjs.org/:_authToken=%s\n' "$TOKEN" > "$HOME/.npmrc"
+      - run: npm publish --access public
